@@ -42,17 +42,20 @@ void ThreadPool::work()
 {
     while(!done)
     {
-        std::function<void()> job;
+        FunctionWrapper job;
+        bool            hasJob{false};
         {
-            std::lock_guard<std::mutex> guard(qlock);
+            std::lock_guard guard(qlock);
             if(!workQueue.empty())
             {
-                job = workQueue.front();
+                // TODO: This will be updated with a better method of obtaining move-only object
+                job = std::move(workQueue.front());
                 workQueue.pop();
+                hasJob = true;
             }
         }
 
-        if(job)
+        if(hasJob)
         {
             job();
         }
@@ -69,8 +72,16 @@ size_t ThreadPool::size()
 }
 
 template<typename FunctionType>
-void ThreadPool::submit(FunctionType func)
+std::future<typename std::result_of_t<FunctionType()>>
+ThreadPool::submit(FunctionType func)
 {
-    std::lock_guard<std::mutex> guard(qlock);
-    workQueue.push(std::function<void()>(func));
+    using result_type = std::result_of_t<FunctionType()>;
+
+    std::packaged_task<result_type()> task(std::move(func));
+    std::future<result_type> retFut(task.get_future());
+
+    std::lock_guard guard(qlock);
+    workQueue.push(std::move(task));
+
+    return retFut;
 }

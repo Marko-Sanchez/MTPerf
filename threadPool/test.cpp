@@ -44,6 +44,11 @@ void addD()
     printf("double value is %.2lf\n", val);
 }
 
+std::string greeting()
+{
+    return "Hello World";
+}
+
 int main (int argc, char *argv[])
 {
     ThreadPool threadpool(1);
@@ -53,6 +58,9 @@ int main (int argc, char *argv[])
     threadpool.submit(addI);
     threadpool.submit(addL);
     threadpool.submit(addD);
+
+    auto retVal = threadpool.submit(greeting);
+    cout << "greeting function says: " << retVal.get() << endl;
 
     std::this_thread::sleep_for (std::chrono::seconds(1));
     return 0;

@@ -1,11 +1,14 @@
 #pragma once
 #include <thread>
+#include <type_traits>
 #include <vector>
 #include <queue>
 #include <atomic>
 #include <mutex>
 #include <stddef.h>
-#include <functional>
+#include <future>
+
+#include "FunctionWrapper.hpp"
 
 class ThreadPool
 {
@@ -15,7 +18,7 @@ private:
     size_t           _size;
 
     std::vector< std::thread >          threadpool;
-    std::queue< std::function<void()> > workQueue;
+    std::queue< FunctionWrapper >       workQueue;
 
     /* Creates and launches threads to do work. */
     void InitializeThreads();
@@ -36,5 +39,5 @@ public:
 
     /* submit task to work queue. */
     template<typename FunctionType>
-    void submit(FunctionType func);
+    std::future<typename std::result_of_t<FunctionType()>> submit(FunctionType func);
 };
